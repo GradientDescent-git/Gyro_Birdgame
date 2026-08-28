@@ -12,14 +12,10 @@ class ControlState:
 
     hand_detected: bool = False
 
-    # Current grab state.
     is_grabbing: bool = False
-
-    # Edge events.
     grab_started: bool = False
     release_triggered: bool = False
 
-    # Normalized game position: 0.0 -> 1.0
     aim_x: float = 0.5
     aim_y: float = 0.5
 
@@ -28,26 +24,23 @@ class ControlState:
 
 class GestureController:
     """
-    Converts HandState into a stable ControlState.
+    Converts HandState into responsive game-ready controls.
 
-    Flow:
+    A higher smoothing value means the controller follows the
+    current hand position more closely.
 
-        No hand
-           ↓
-        Hand detected
-           ↓
-        Pinch starts
-           ↓
-        grab_started = True
-           ↓
-        Move while pinching
-           ↓
-        Release pinch
-           ↓
-        release_triggered = True
+    smoothing = 1.0
+        No smoothing / maximum responsiveness
+
+    smoothing = 0.0
+        Maximum lag
     """
 
-    def __init__(self, smoothing: float = 0.25) -> None:
+    def __init__(
+        self,
+        smoothing: float = 0.85,
+    ) -> None:
+
         if not 0.0 < smoothing <= 1.0:
             raise ValueError(
                 "smoothing must be greater than 0 and less than or equal to 1"
@@ -60,25 +53,21 @@ class GestureController:
 
     def reset(self) -> None:
         """Reset controller state safely."""
+
         self._was_grabbing = False
         self._smoothed_position = None
 
-    def update(self, hand_state: HandState) -> ControlState:
-        """
-        Convert raw HandState into stable game controls.
-        """
+    def update(
+        self,
+        hand_state: HandState,
+    ) -> ControlState:
+        """Convert raw HandState into responsive game controls."""
 
-        # --------------------------------------------------
-        # No hand detected
-        # --------------------------------------------------
         if not hand_state.detected:
             self.reset()
 
             return ControlState()
 
-        # --------------------------------------------------
-        # Missing landmarks
-        # --------------------------------------------------
         if hand_state.index_tip is None:
             self._was_grabbing = False
 
@@ -87,22 +76,18 @@ class GestureController:
                 pinch_distance=hand_state.pinch_distance,
             )
 
-        # --------------------------------------------------
-        # Use index fingertip as cursor position
-        # --------------------------------------------------
         raw_x, raw_y = hand_state.index_tip
 
-        # Keep values inside normalized bounds.
         raw_x = max(0.0, min(1.0, raw_x))
         raw_y = max(0.0, min(1.0, raw_y))
 
-        # --------------------------------------------------
-        # Smooth movement
-        # --------------------------------------------------
         if self._smoothed_position is None:
+
             smoothed_x = raw_x
             smoothed_y = raw_y
+
         else:
+
             previous_x, previous_y = self._smoothed_position
 
             alpha = self.smoothing
@@ -122,9 +107,6 @@ class GestureController:
             smoothed_y,
         )
 
-        # --------------------------------------------------
-        # Pinch / grab state
-        # --------------------------------------------------
         is_grabbing = hand_state.is_pinching
 
         grab_started = (
