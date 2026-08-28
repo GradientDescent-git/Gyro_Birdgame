@@ -14,3 +14,11 @@ dist/
 # Local audit/helper files
 project_tree.txt
 visionbird_core_files.txt
+
+# Temporary development and inspection files
+integration_files.txt
+movement_code.txt
+project_tree_full.txt
+test_gesture.py
+test_gesture_bridge.py
+test_hand.py
