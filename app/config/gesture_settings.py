@@ -5,34 +5,30 @@ from __future__ import annotations
 # VISIONBIRD GESTURE SETTINGS
 # ============================================================
 
-# Webcam device.
+# Webcam index.
 DEFAULT_CAMERA_INDEX = 0
 
 
-# ------------------------------------------------------------
-# HAND MOVEMENT
-# ------------------------------------------------------------
+# ============================================================
+# GESTURE MOVEMENT
+# ============================================================
 
-# Amplifies relative hand movement.
-#
 # Higher = faster cursor movement.
-# Recommended starting range: 5.0 - 10.0
-DEFAULT_SENSITIVITY = 7.0
+# Recommended starting value for VisionBird.
+DEFAULT_SENSITIVITY = 4.5
 
-
-# Normalized movement smaller than this is ignored.
-# Prevents tiny MediaPipe tracking jitter.
+# Ignore tiny hand-tracking jitter.
 DEFAULT_DEAD_ZONE = 0.0015
 
-
-# GestureController smoothing.
-#
-# Lower = smoother/slower
-# Higher = more responsive
-DEFAULT_SMOOTHING = 0.30
+# Higher = more responsive.
+# 1.0 = no smoothing.
+DEFAULT_SMOOTHING = 0.85
 
 
-# Backward-compatible aliases used elsewhere in the project.
+# ============================================================
+# BACKWARD-COMPATIBLE GAME SETTINGS
+# ============================================================
+
 GESTURE_SENSITIVITY = DEFAULT_SENSITIVITY
 GESTURE_SMOOTHING = DEFAULT_SMOOTHING
 
@@ -43,7 +39,6 @@ GESTURE_SMOOTHING = DEFAULT_SMOOTHING
 
 # Maximum distance the bird can be pulled.
 MAX_PULL_DISTANCE = 150
-
 
 # Prevent excessive forward movement.
 MAX_FORWARD_PULL = 30
