@@ -10,3 +10,7 @@ dist/
 .env
 .vscode/
 .idea/
+
+# Local audit/helper files
+project_tree.txt
+visionbird_core_files.txt

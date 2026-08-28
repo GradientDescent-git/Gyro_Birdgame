@@ -2,127 +2,106 @@ from __future__ import annotations
 
 import cv2
 
+from app.controls.gesture_controller import (
+    ControlState,
+    GestureController,
+)
 from app.vision.hand_tracker import HandTracker
 
 
 class GestureBridge:
     """
-    VisionBird gesture input bridge.
+    Connects the webcam + hand tracking pipeline to VisionBird.
 
-    Responsibilities:
-    - Read webcam frames.
-    - Detect one hand.
-    - Map the index finger to game coordinates.
-    - Detect pinch start and pinch release.
+    The game receives a simple dictionary:
 
-    Slingshot pull mechanics are intentionally NOT handled here.
-    The game controls and physics remain inside main.py.
+        detected
+        x
+        y
+        pinching
+        pinch_started
+        pinch_released
     """
 
     def __init__(
         self,
-        screen_width: int = 1200,
-        screen_height: int = 650,
+        screen_width: int,
+        screen_height: int,
         camera_index: int = 0,
+        smoothing: float = 0.25,
+        window_name: str = "VisionBird Gesture Control",
     ) -> None:
 
         self.screen_width = screen_width
         self.screen_height = screen_height
 
-        # ----------------------------------------------------
-        # CAMERA
-        # ----------------------------------------------------
+        self.camera_index = camera_index
+        self.window_name = window_name
 
         self.camera = cv2.VideoCapture(camera_index)
 
         if not self.camera.isOpened():
-            raise RuntimeError("Could not open webcam.")
+            self.camera.release()
 
-        self.camera.set(
-            cv2.CAP_PROP_FRAME_WIDTH,
-            640,
-        )
-
-        self.camera.set(
-            cv2.CAP_PROP_FRAME_HEIGHT,
-            480,
-        )
-
-        # ----------------------------------------------------
-        # HAND TRACKER
-        # ----------------------------------------------------
+            raise RuntimeError(
+                f"Could not open camera index {camera_index}"
+            )
 
         self.tracker = HandTracker()
 
-        # ----------------------------------------------------
-        # PINCH STATE
-        # ----------------------------------------------------
-
-        self.previous_pinching = False
-
-        # ----------------------------------------------------
-        # GAME CURSOR
-        # ----------------------------------------------------
+        self.controller = GestureController(
+            smoothing=smoothing
+        )
 
         self.game_x = screen_width // 2
         self.game_y = screen_height // 2
 
-        self.smooth_x = float(self.game_x)
-        self.smooth_y = float(self.game_y)
+        self._closed = False
 
-        # Cursor smoothing only.
-        self.smoothing = 0.30
+    def update(self) -> dict[str, object]:
+        """
+        Capture one frame and return game-ready gesture state.
+        """
 
-        # ----------------------------------------------------
-        # CAMERA WINDOW
-        # ----------------------------------------------------
-
-        self.window_name = "VisionBird Hand Control"
-
-        cv2.namedWindow(
-            self.window_name,
-            cv2.WINDOW_NORMAL,
-        )
-
-        cv2.resizeWindow(
-            self.window_name,
-            640,
-            480,
-        )
-
-        print()
-        print("GestureBridge initialized successfully.")
-        print("Hand tracking ready.")
-        print()
-
-    def clamp(
-        self,
-        value: int,
-        minimum: int,
-        maximum: int,
-    ) -> int:
-
-        return max(
-            minimum,
-            min(
-                maximum,
-                value,
-            ),
-        )
-
-    def update(self) -> dict:
-
-        # ----------------------------------------------------
-        # READ CAMERA
-        # ----------------------------------------------------
+        if self._closed:
+            return self._empty_state()
 
         success, frame = self.camera.read()
 
-        if not success:
+        if not success or frame is None:
+            return self._empty_state()
 
-            pinch_released = self.previous_pinching
+        # Mirror once here.
+        frame = cv2.flip(frame, 1)
 
-            self.previous_pinching = False
+        frame, hand_state = self.tracker.process(
+            frame
+        )
+
+        control_state = self.controller.update(
+            hand_state
+        )
+
+        self._update_game_position(
+            control_state
+        )
+
+        self._draw_debug_overlay(
+            frame,
+            hand_state,
+            control_state,
+        )
+
+        cv2.imshow(
+            self.window_name,
+            frame,
+        )
+
+        key = cv2.waitKey(1) & 0xFF
+
+        # ESC only closes gesture control safely.
+        if key == 27:
+            self.controller.reset()
 
             return {
                 "detected": False,
@@ -130,136 +109,110 @@ class GestureBridge:
                 "y": self.game_y,
                 "pinching": False,
                 "pinch_started": False,
-                "pinch_released": pinch_released,
+                "pinch_released": False,
             }
 
-        # ----------------------------------------------------
-        # MIRROR CAMERA
-        # ----------------------------------------------------
+        return {
+            "detected": control_state.hand_detected,
+            "x": self.game_x,
+            "y": self.game_y,
+            "pinching": control_state.is_grabbing,
+            "pinch_started": control_state.grab_started,
+            "pinch_released": control_state.release_triggered,
+        }
 
-        frame = cv2.flip(
-            frame,
-            1,
+    def _update_game_position(
+        self,
+        control_state: ControlState,
+    ) -> None:
+        """Convert normalized position to game coordinates."""
+
+        if not control_state.hand_detected:
+            return
+
+        x = int(
+            control_state.aim_x
+            * (self.screen_width - 1)
         )
 
-        # ----------------------------------------------------
-        # DETECT HAND
-        # ----------------------------------------------------
-
-        frame, hand_state = self.tracker.process(
-            frame
+        y = int(
+            control_state.aim_y
+            * (self.screen_height - 1)
         )
 
-        # ----------------------------------------------------
-        # PINCH EVENTS
-        # ----------------------------------------------------
-
-        current_pinching = (
-            hand_state.detected
-            and hand_state.is_pinching
-        )
-
-        pinch_started = (
-            current_pinching
-            and not self.previous_pinching
-        )
-
-        pinch_released = (
-            not current_pinching
-            and self.previous_pinching
-        )
-
-        # ----------------------------------------------------
-        # MAP INDEX FINGER TO GAME
-        # ----------------------------------------------------
-
-        if (
-            hand_state.detected
-            and hand_state.index_tip is not None
-        ):
-
-            index_x, index_y = hand_state.index_tip
-
-            target_x = int(
-                index_x * self.screen_width
-            )
-
-            target_y = int(
-                index_y * self.screen_height
-            )
-
-            # Smooth cursor movement.
-
-            self.smooth_x += (
-                target_x - self.smooth_x
-            ) * self.smoothing
-
-            self.smooth_y += (
-                target_y - self.smooth_y
-            ) * self.smoothing
-
-            self.game_x = self.clamp(
-                int(self.smooth_x),
-                0,
+        self.game_x = max(
+            0,
+            min(
                 self.screen_width - 1,
-            )
+                x,
+            ),
+        )
 
-            self.game_y = self.clamp(
-                int(self.smooth_y),
-                0,
+        self.game_y = max(
+            0,
+            min(
                 self.screen_height - 1,
-            )
+                y,
+            ),
+        )
 
-        # ----------------------------------------------------
-        # CAMERA UI
-        # ----------------------------------------------------
+    def _empty_state(self) -> dict[str, object]:
+        return {
+            "detected": False,
+            "x": self.game_x,
+            "y": self.game_y,
+            "pinching": False,
+            "pinch_started": False,
+            "pinch_released": False,
+        }
 
-        if hand_state.detected:
+    def _draw_debug_overlay(
+        self,
+        frame,
+        hand_state,
+        control_state: ControlState,
+    ) -> None:
 
-            hand_text = "HAND DETECTED"
+        status = (
+            "PINCHING"
+            if control_state.is_grabbing
+            else "OPEN"
+        )
 
-        else:
-
-            hand_text = "NO HAND"
-
-        if current_pinching:
-
-            gesture_text = "PINCHING"
-
-        else:
-
-            gesture_text = "OPEN HAND"
+        color = (
+            (0, 255, 0)
+            if control_state.is_grabbing
+            else (0, 165, 255)
+        )
 
         cv2.putText(
             frame,
-            hand_text,
+            f"Hand: {'Detected' if hand_state.detected else 'Not detected'}",
             (20, 40),
             cv2.FONT_HERSHEY_SIMPLEX,
-            0.8,
-            (0, 255, 0),
+            0.7,
+            color,
             2,
         )
 
         cv2.putText(
             frame,
-            gesture_text,
+            f"Gesture: {status}",
             (20, 80),
             cv2.FONT_HERSHEY_SIMPLEX,
             0.7,
-            (0, 255, 0),
+            color,
             2,
         )
 
         if hand_state.pinch_distance is not None:
 
-            distance_text = (
-                f"Pinch: "
-                f"{hand_state.pinch_distance:.3f}"
-            )
-
             cv2.putText(
                 frame,
-                distance_text,
+                (
+                    "Pinch distance: "
+                    f"{hand_state.pinch_distance:.3f}"
+                ),
                 (20, 120),
                 cv2.FONT_HERSHEY_SIMPLEX,
                 0.6,
@@ -267,14 +220,12 @@ class GestureBridge:
                 2,
             )
 
-        cursor_text = (
-            f"Game Cursor: "
-            f"({self.game_x}, {self.game_y})"
-        )
-
         cv2.putText(
             frame,
-            cursor_text,
+            (
+                "Game cursor: "
+                f"({self.game_x}, {self.game_y})"
+            ),
             (20, 160),
             cv2.FONT_HERSHEY_SIMPLEX,
             0.6,
@@ -304,7 +255,7 @@ class GestureBridge:
 
         cv2.putText(
             frame,
-            "Move hand while pinching = pull",
+            "Release pinch = launch",
             (20, 460),
             cv2.FONT_HERSHEY_SIMPLEX,
             0.55,
@@ -312,46 +263,15 @@ class GestureBridge:
             2,
         )
 
-        # ----------------------------------------------------
-        # DISPLAY CAMERA
-        # ----------------------------------------------------
-
-        cv2.imshow(
-            self.window_name,
-            frame,
-        )
-
-        key = cv2.waitKey(1) & 0xFF
-
-        if key == 27:
-
-            # ESC should not accidentally launch a bird.
-            current_pinching = False
-            pinch_started = False
-            pinch_released = False
-
-        # ----------------------------------------------------
-        # SAVE STATE
-        # ----------------------------------------------------
-
-        self.previous_pinching = current_pinching
-
-        # ----------------------------------------------------
-        # RETURN GAME INPUT
-        # ----------------------------------------------------
-
-        return {
-            "detected": hand_state.detected,
-            "x": self.game_x,
-            "y": self.game_y,
-            "pinching": current_pinching,
-            "pinch_started": pinch_started,
-            "pinch_released": pinch_released,
-        }
-
     def close(self) -> None:
+        """Release all camera and vision resources safely."""
 
-        print("Closing VisionBird GestureBridge...")
+        if self._closed:
+            return
+
+        self._closed = True
+
+        self.controller.reset()
 
         if self.camera is not None:
             self.camera.release()
@@ -360,5 +280,3 @@ class GestureBridge:
             self.tracker.close()
 
         cv2.destroyAllWindows()
-
-        print("GestureBridge closed.")
