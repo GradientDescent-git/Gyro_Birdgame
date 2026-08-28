@@ -73,6 +73,14 @@ from level import Level
 
 from app.game.gesture_bridge import GestureBridge
 
+from app.config.gesture_settings import (
+    GESTURE_SENSITIVITY,
+    GESTURE_SMOOTHING,
+    HAND_LOST_TIMEOUT,
+    MAX_FORWARD_PULL,
+    MAX_PULL_DISTANCE,
+)
+
 
 # ============================================================
 # HELPER FUNCTIONS
@@ -359,21 +367,6 @@ gesture_grab_start_y = sling_y
 
 gesture_pull_start_x = sling_x
 gesture_pull_start_y = sling_y
-
-
-# ------------------------------------------------------------
-# GESTURE TUNING
-# ------------------------------------------------------------
-
-GESTURE_SENSITIVITY = 2.2
-
-GESTURE_SMOOTHING = 0.30
-
-MAX_PULL_DISTANCE = 150
-
-MAX_FORWARD_PULL = 30
-
-HAND_LOST_TIMEOUT = 0.75
 
 
 # ------------------------------------------------------------
