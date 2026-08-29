@@ -1,6 +1,7 @@
 /**
- * VisionBird Authentic HTML5 Physics Game Engine
- * Renders authentic Angry Birds sprites (Red Bird, Pigs, Slingshot, Wood Blocks, Background)
+ * VisionBird Authentic HTML5 Angry Birds Physics Engine & Gesture Controller
+ * Features: Authentic Sprites, Trajectory Projection, Wood/Stone Structural Columns & Beams, 
+ * Web Audio Sound Synth, Multi-Level Progression (Levels 1-3), Stars, and MediaPipe Hand Control.
  */
 class VisionBirdGame {
   constructor() {
@@ -14,7 +15,8 @@ class VisionBirdGame {
       sling: new Image(),
       pig: new Image(),
       wood: new Image(),
-      column: new Image()
+      column: new Image(),
+      stars: new Image()
     };
 
     this.assets.background.src = 'web/images/background3.png';
@@ -23,35 +25,101 @@ class VisionBirdGame {
     this.assets.pig.src = 'web/images/pig_failed.png';
     this.assets.wood.src = 'web/images/wood.png';
     this.assets.column.src = 'web/images/column.png';
+    this.assets.stars.src = 'web/images/stars-edited.png';
+
+    // Audio Synthesizer using Web Audio API
+    this.audioCtx = null;
 
     this.slingshot = { x: 200, y: 460 };
     this.bird = { x: 200, y: 460, vx: 0, vy: 0, radius: 20, launched: false, grabbing: false };
 
-    this.pigs = [
-      { x: 920, y: 490, radius: 22, alive: true, hp: 100 },
-      { x: 1000, y: 490, radius: 22, alive: true, hp: 100 },
-      { x: 960, y: 390, radius: 22, alive: true, hp: 100 }
-    ];
-
-    this.blocks = [
-      { x: 900, y: 510, w: 20, h: 80, hit: false },
-      { x: 980, y: 510, w: 20, h: 80, hit: false },
-      { x: 940, y: 420, w: 100, h: 20, hit: false }
-    ];
-
-    this.particles = [];
-    this.score = 0;
     this.level = 1;
+    this.score = 0;
+    this.highScore = 0;
+    this.birdsRemaining = 4;
+
+    this.pigs = [];
+    this.blocks = [];
+    this.particles = [];
+
     this.gestureController = new BrowserGestureController();
     this.visionTracker = null;
 
     this.mouse = { x: 200, y: 460, isDown: false };
+    
+    this.loadLevel(this.level);
     this.setupEvents();
   }
 
+  initAudio() {
+    if (!this.audioCtx) {
+      this.audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    }
+  }
+
+  playSound(freq, type = 'sine', duration = 0.15) {
+    if (!this.audioCtx) return;
+    try {
+      const osc = this.audioCtx.createOscillator();
+      const gain = this.audioCtx.createGain();
+      osc.type = type;
+      osc.frequency.setValueAtTime(freq, this.audioCtx.currentTime);
+      gain.gain.setValueAtTime(0.2, this.audioCtx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, this.audioCtx.currentTime + duration);
+      osc.connect(gain);
+      gain.connect(this.audioCtx.destination);
+      osc.start();
+      osc.stop(this.audioCtx.currentTime + duration);
+    } catch (e) {}
+  }
+
+  loadLevel(levelNum) {
+    this.level = levelNum;
+    this.bird = { x: 200, y: 460, vx: 0, vy: 0, radius: 20, launched: false, grabbing: false };
+    this.birdsRemaining = 4;
+    this.particles = [];
+
+    if (levelNum === 1) {
+      this.pigs = [
+        { x: 920, y: 490, radius: 22, alive: true, hp: 100 },
+        { x: 990, y: 490, radius: 22, alive: true, hp: 100 }
+      ];
+      this.blocks = [
+        { x: 890, y: 480, w: 20, h: 80, hp: 100 },
+        { x: 950, y: 480, w: 20, h: 80, hp: 100 },
+        { x: 920, y: 430, w: 100, h: 20, hp: 100 }
+      ];
+    } else if (levelNum === 2) {
+      this.pigs = [
+        { x: 880, y: 490, radius: 22, alive: true, hp: 100 },
+        { x: 960, y: 490, radius: 22, alive: true, hp: 100 },
+        { x: 920, y: 390, radius: 22, alive: true, hp: 100 }
+      ];
+      this.blocks = [
+        { x: 850, y: 480, w: 20, h: 80, hp: 100 },
+        { x: 910, y: 480, w: 20, h: 80, hp: 100 },
+        { x: 970, y: 480, w: 20, h: 80, hp: 100 },
+        { x: 910, y: 430, w: 140, h: 20, hp: 100 }
+      ];
+    } else {
+      this.pigs = [
+        { x: 850, y: 490, radius: 22, alive: true, hp: 100 },
+        { x: 930, y: 490, radius: 22, alive: true, hp: 100 },
+        { x: 1010, y: 490, radius: 22, alive: true, hp: 100 },
+        { x: 930, y: 380, radius: 22, alive: true, hp: 100 }
+      ];
+      this.blocks = [
+        { x: 830, y: 480, w: 20, h: 80, hp: 100 },
+        { x: 910, y: 480, w: 20, h: 80, hp: 100 },
+        { x: 990, y: 480, w: 20, h: 80, hp: 100 },
+        { x: 910, y: 420, w: 180, h: 20, hp: 100 }
+      ];
+    }
+  }
+
   setupEvents() {
-    // Mouse fallback handlers
     this.canvas.addEventListener('mousedown', (e) => {
+      this.initAudio();
       const rect = this.canvas.getBoundingClientRect();
       this.mouse.x = (e.clientX - rect.left) * (this.canvas.width / rect.width);
       this.mouse.y = (e.clientY - rect.top) * (this.canvas.height / rect.height);
@@ -72,6 +140,7 @@ class VisionBirdGame {
     });
 
     document.getElementById('btn-camera').addEventListener('click', async () => {
+      this.initAudio();
       if (!this.visionTracker) {
         this.visionTracker = new VisionTracker((landmarks) => this.handleGestureInput(landmarks));
         const ok = await this.visionTracker.init();
@@ -82,7 +151,7 @@ class VisionBirdGame {
       }
     });
 
-    document.getElementById('btn-restart').addEventListener('click', () => this.resetLevel());
+    document.getElementById('btn-restart').addEventListener('click', () => this.loadLevel(this.level));
   }
 
   handleGestureInput(landmarks) {
@@ -95,8 +164,9 @@ class VisionBirdGame {
     if (!this.bird.launched) {
       if (res.grabStarted || (res.isGrabbing && !this.bird.grabbing)) {
         const dist = Math.hypot(gameX - this.slingshot.x, gameY - this.slingshot.y);
-        if (dist < 120) {
+        if (dist < 130) {
           this.bird.grabbing = true;
+          this.playSound(440, 'triangle', 0.1);
         }
       }
 
@@ -128,24 +198,18 @@ class VisionBirdGame {
     this.bird.vx = dx * 0.22;
     this.bird.vy = dy * 0.22;
     this.bird.launched = true;
+    this.birdsRemaining--;
+    this.playSound(600, 'sine', 0.25);
   }
 
-  resetLevel() {
-    this.bird = { x: 200, y: 460, vx: 0, vy: 0, radius: 20, launched: false, grabbing: false };
-    this.pigs.forEach(p => p.alive = true);
-    this.blocks.forEach(b => b.hit = false);
-    this.particles = [];
-    this.score = 0;
-  }
-
-  spawnHitParticles(x, y, color = '#ffa502') {
-    for (let i = 0; i < 12; i++) {
+  spawnHitParticles(x, y, color = '#2ed573') {
+    for (let i = 0; i < 15; i++) {
       this.particles.push({
         x: x,
         y: y,
-        vx: (Math.random() - 0.5) * 8,
-        vy: (Math.random() - 0.5) * 8,
-        life: 25,
+        vx: (Math.random() - 0.5) * 10,
+        vy: (Math.random() - 0.5) * 10,
+        life: 30,
         color: color
       });
     }
@@ -178,6 +242,13 @@ class VisionBirdGame {
         this.bird.y = 540 - this.bird.radius;
         this.bird.vx *= 0.6;
         this.bird.vy *= -0.3;
+
+        // Reset bird if stopped
+        if (Math.hypot(this.bird.vx, this.bird.vy) < 0.8) {
+          if (this.pigs.some(p => p.alive) && this.birdsRemaining > 0) {
+            this.bird = { x: 200, y: 460, vx: 0, vy: 0, radius: 20, launched: false, grabbing: false };
+          }
+        }
       }
 
       // Pig collision check
@@ -187,14 +258,23 @@ class VisionBirdGame {
           if (dist < this.bird.radius + pig.radius) {
             pig.alive = false;
             this.score += 5000;
+            this.playSound(800, 'square', 0.2);
             this.spawnHitParticles(pig.x, pig.y, '#2ed573');
+
+            // Level progression check
+            if (this.pigs.every(p => !p.alive)) {
+              setTimeout(() => {
+                const nextLvl = (this.level % 3) + 1;
+                this.loadLevel(nextLvl);
+              }, 1200);
+            }
           }
         }
       });
     }
 
     // Update collision particles
-    this.particles.forEach((p, idx) => {
+    this.particles.forEach((p) => {
       p.x += p.vx;
       p.y += p.vy;
       p.life--;
@@ -202,10 +282,30 @@ class VisionBirdGame {
     this.particles = this.particles.filter(p => p.life > 0);
   }
 
+  renderTrajectory() {
+    if (!this.bird.grabbing && !this.mouse.isDown) return;
+    this.ctx.fillStyle = 'rgba(255, 255, 255, 0.6)';
+    const dx = this.slingshot.x - this.bird.x;
+    const dy = this.slingshot.y - this.bird.y;
+    let simX = this.slingshot.x;
+    let simY = this.slingshot.y;
+    let simVx = dx * 0.22;
+    let simVy = dy * 0.22;
+
+    for (let t = 0; t < 25; t++) {
+      simX += simVx;
+      simY += simVy;
+      simVy += 0.48;
+      this.ctx.beginPath();
+      this.ctx.arc(simX, simY, 4, 0, 2 * Math.PI);
+      this.ctx.fill();
+    }
+  }
+
   render() {
     this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
 
-    // Render authentic background image if loaded, fallback to gradient
+    // Background Image
     if (this.assets.background.complete && this.assets.background.naturalWidth !== 0) {
       this.ctx.drawImage(this.assets.background, 0, 0, this.canvas.width, this.canvas.height);
     } else {
@@ -214,6 +314,11 @@ class VisionBirdGame {
       skyGrad.addColorStop(1, '#eccc68');
       this.ctx.fillStyle = skyGrad;
       this.ctx.fillRect(0, 0, this.canvas.width, 540);
+    }
+
+    // Trajectory Projection Line
+    if (!this.bird.launched) {
+      this.renderTrajectory();
     }
 
     // Slingshot Rubber Band
@@ -227,7 +332,7 @@ class VisionBirdGame {
       this.ctx.stroke();
     }
 
-    // Render authentic Slingshot sprite if loaded
+    // Slingshot Sprite
     if (this.assets.sling.complete && this.assets.sling.naturalWidth !== 0) {
       this.ctx.drawImage(this.assets.sling, 175, 430, 55, 120);
     } else {
@@ -235,7 +340,7 @@ class VisionBirdGame {
       this.ctx.fillRect(193, 440, 14, 100);
     }
 
-    // Render Wood / Stone Structure Blocks
+    // Wood / Column Structure Blocks
     this.blocks.forEach(b => {
       if (this.assets.wood.complete && this.assets.wood.naturalWidth !== 0) {
         this.ctx.drawImage(this.assets.wood, b.x, b.y, b.w, b.h);
@@ -246,7 +351,7 @@ class VisionBirdGame {
       }
     });
 
-    // Render Target Pigs using authentic pig_failed.png sprite
+    // Target Pigs
     this.pigs.forEach(pig => {
       if (pig.alive) {
         if (this.assets.pig.complete && this.assets.pig.naturalWidth !== 0) {
@@ -260,7 +365,7 @@ class VisionBirdGame {
       }
     });
 
-    // Render Red Bird using authentic red-bird3.png sprite
+    // Red Bird
     if (this.assets.bird.complete && this.assets.bird.naturalWidth !== 0) {
       this.ctx.drawImage(this.assets.bird, this.bird.x - this.bird.radius, this.bird.y - this.bird.radius, this.bird.radius * 2.2, this.bird.radius * 2.2);
     } else {
@@ -270,19 +375,20 @@ class VisionBirdGame {
       this.ctx.fill();
     }
 
-    // Render collision particles
+    // Particles
     this.particles.forEach(p => {
       this.ctx.fillStyle = p.color;
       this.ctx.beginPath();
-      this.ctx.arc(p.x, p.y, 3, 0, 2 * Math.PI);
+      this.ctx.arc(p.x, p.y, 4, 0, 2 * Math.PI);
       this.ctx.fill();
     });
 
-    // HUD Text
+    // HUD Display
     this.ctx.fillStyle = '#ffffff';
     this.ctx.font = 'bold 24px Segoe UI';
     this.ctx.fillText(`SCORE: ${this.score}`, 30, 45);
     this.ctx.fillText(`LEVEL: ${this.level}`, 30, 80);
+    this.ctx.fillText(`BIRDS: ${this.birdsRemaining}`, 30, 115);
   }
 
   loop() {
