@@ -17,13 +17,17 @@
 
 ## Executive Summary
 
-**VisionBird** is an end-to-end computer vision and signal processing system that maps natural 3D hand gestures into low-latency 2D physics engine interactions. Built using OpenCV, Google MediaPipe, Pygame, and Pymunk 2D physics, VisionBird transforms raw webcam video input into a smooth, responsive slingshot simulation.
+**VisionBird** takes the open-source **Angry Birds** Pygame & Pymunk 2D physics game and integrates a real-time **Computer Vision & Signal Processing Gesture Control System**. 
 
-Unlike conventional touch or mouse interfaces, VisionBird tracks 21 hand landmarks per frame in real time, extracts scale-invariant geometric features, filters signal noise with exponential low-pass smoothing ($\alpha = 0.85$), and enforces a dual-threshold hysteresis finite state machine to eliminate boundary jitter and accidental launches.
+Instead of playing Angry Birds with a traditional mouse or touch screen, VisionBird allows you to control the **actual Angry Birds game using natural 3D hand gestures in front of your webcam**:
+- **Aim**: Move your index finger to target.
+- **Grab**: Pinch your thumb and index finger near the bird.
+- **Pull**: Move your pinched hand backward relative to the grab anchor to stretch the slingshot.
+- **Launch**: Release the pinch to fire the bird into the pig fortress structures!
 
 ---
 
-## Key Computer Vision & Signal Processing Innovations
+## Computer Vision & Signal Processing Innovations
 
 ### 1. Scale-Invariant Feature Normalization
 Raw pixel distances between finger tips vary based on the user's distance from the camera. VisionBird dynamically computes hand scale $S$ using the Wrist (Landmark 0) to Middle Finger MCP (Landmark 9) reference length:
@@ -68,7 +72,7 @@ flowchart TD
     Hysteresis --> FSM[7-Stage Gesture State Machine]
     FSM --> Smooth[Exponential Low-Pass Filter]
     Smooth --> Bridge[GestureBridge Event Dispatcher]
-    Bridge --> Physics[Pygame + Pymunk Physics Engine]
+    Bridge --> Physics[Open-Source Angry Birds Pygame + Pymunk Game Engine]
 ```
 
 ### 7-Stage Finite State Machine Lifecycle
@@ -99,11 +103,10 @@ IDLE ──> HAND_DETECTED ──> READY ──> GRABBING ──> PULLING ──
 | `app/controls/gesture_controller.py` | **Signal Processing** | Dual-threshold hysteresis & EMA smoothing | 100% Original |
 | `app/controls/gesture_state.py` | **Control Systems** | 7-stage finite state machine | 100% Original |
 | `app/game/gesture_bridge.py` | **Game Systems** | Real-time developer HUD & event bridge | 100% Original |
-| `app/game/custom_levels.py` | **Game Logic** | Procedural level generator & score engine | 100% Original |
 | `web/` | **Full Stack Web** | Standalone HTML5 Canvas physics app | 100% Original |
 | `.github/workflows/` | **DevOps** | CI testing & GitHub Pages CD pipelines | 100% Original |
 | `tests/` | **Quality Assurance** | Automated Pytest unit & integration test suite | 100% Original |
-| `third_party/angry-birds-python` | **Reference Assets** | Open-source Pygame physics base prototype | Third-Party Reference |
+| `third_party/angry-birds-python` | **Base Game Engine** | Open-source Angry Birds Pygame/Pymunk game source | Third-Party Reference Base |
 
 ---
 
@@ -127,7 +130,7 @@ source .venv/bin/activate  # On Windows: .\.venv\Scripts\activate
 # 3. Install dependencies
 pip install -r requirements.txt
 
-# 4. Launch VisionBird
+# 4. Launch Angry Birds with Computer Vision Hand Tracking
 python run.py
 ```
 
@@ -148,7 +151,7 @@ python -m pytest tests/ -v --cov=app
 ```
 
 ```text
-============================= 15 passed in 2.69s ==============================
+============================= 15 passed in 2.23s ==============================
 ```
 
 ---
