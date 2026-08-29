@@ -1,6 +1,6 @@
 # VisionBird 🦅
 
-**Real-Time Computer Vision & Gesture-Controlled Physics Engine**
+**Real-Time Computer Vision & Signal Processing Gesture-Controlled Physics Engine**
 
 [![VisionBird CI](https://github.com/GradientDescent-git/Gyro_Birdgame/actions/workflows/ci.yml/badge.svg)](https://github.com/GradientDescent-git/Gyro_Birdgame/actions)
 [![Deploy to GitHub Pages](https://github.com/GradientDescent-git/Gyro_Birdgame/actions/workflows/deploy.yml/badge.svg)](https://gradientdescent-git.github.io/Gyro_Birdgame/)
@@ -11,78 +11,73 @@
 ---
 
 > ### 🎮 **[PLAY LIVE IN YOUR BROWSER NOW (No Installation Needed)](https://gradientdescent-git.github.io/Gyro_Birdgame/)**
-> *Experience real-time webcam gesture control directly in your browser. Supports desktop webcams and mobile devices with touch fallback.*
+> *Experience real-time webcam gesture control directly in your browser. Features real-time visual hand reticle cursor, automated camera startup, and touch/mouse fallbacks.*
 
 ---
 
 ## Executive Summary
 
-**VisionBird** takes the open-source **Angry Birds** Pygame & Pymunk 2D physics game and integrates a real-time **Computer Vision & Signal Processing Gesture Control System**. 
+**VisionBird** is an end-to-end computer vision, machine learning, and signal processing system that translates natural 3D hand gestures into sub-2ms physics engine control events. Built using OpenCV, Google MediaPipe Deep Neural Networks, Pygame, and Pymunk 2D physics, VisionBird turns raw webcam video streams into a responsive, low-latency gesture-controlled simulation.
 
-Instead of playing Angry Birds with a traditional mouse or touch screen, VisionBird allows you to control the **actual Angry Birds game using natural 3D hand gestures in front of your webcam**:
-- **Aim**: Move your index finger to target.
-- **Grab**: Pinch your thumb and index finger near the bird.
-- **Pull**: Move your pinched hand backward relative to the grab anchor to stretch the slingshot.
-- **Launch**: Release the pinch to fire the bird into the pig fortress structures!
+VisionBird tracks 21 3D hand landmarks per frame, computes scale-invariant normalized geometric features, applies first-order exponential low-pass filtering ($\alpha = 0.85$) to eliminate signal noise, and enforces a dual-threshold hysteresis finite state machine to prevent boundary flickering and false state triggers.
 
 ---
 
-## Computer Vision & Signal Processing Innovations
+## Machine Learning & Signal Processing Architecture
 
-### 1. Scale-Invariant Feature Normalization
-Raw pixel distances between finger tips vary based on the user's distance from the camera. VisionBird dynamically computes hand scale $S$ using the Wrist (Landmark 0) to Middle Finger MCP (Landmark 9) reference length:
+```mermaid
+flowchart TD
+    Camera[Webcam Video Stream] --> OpenCV[OpenCV BGR/RGB Frame Capture]
+    OpenCV --> MediaPipe[MediaPipe Deep Neural Network 21 Landmarks]
+    MediaPipe --> Features[Scale-Invariant Feature Normalization]
+    Features --> Hysteresis[Dual-Threshold Pinch Hysteresis 0.12/0.16]
+    Hysteresis --> FSM[7-Stage Gesture State Machine]
+    FSM --> Smooth[Exponential Low-Pass Filter alpha=0.85]
+    Smooth --> Reticle[Visual Canvas Aiming Reticle Cursor]
+    Reticle --> Bridge[GestureBridge Event Dispatcher]
+    Bridge --> Physics[Pygame + Pymunk Physics Engine]
+```
+
+---
+
+## Technical & Mathematical Specifications
+
+### 1. MediaPipe Neural Network 3D Landmark Extraction
+MediaPipe's two-stage pipeline (Single Shot Detector Palm Detector + Hand Landmark Model) predicts 21 3D coordinates $(x, y, z)$ per frame.
+
+### 2. Scale-Invariant Feature Normalization
+Raw pixel distances between fingertips vary based on the user's distance from the camera. VisionBird dynamically computes hand scale $S$ using the Wrist (Landmark 0) to Middle Finger MCP (Landmark 9) reference vector:
 
 $$S = \sqrt{(x_9 - x_0)^2 + (y_9 - y_0)^2 + (z_9 - z_0)^2}$$
 
-The normalized pinch metric $d_{norm}$ is defined as:
+The scale-invariant normalized pinch metric $d_{norm}$ is defined as:
 
 $$d_{norm} = \frac{\sqrt{(x_8 - x_4)^2 + (y_8 - y_4)^2}}{S}$$
 
-This guarantees identical gesture responsiveness whether the user stands 0.5 meters or 1.5 meters from the webcam.
+This guarantees consistent gesture triggering whether the user is 0.5 meters or 1.5 meters from the webcam.
 
-### 2. Dual-Threshold Pinch Hysteresis
-To prevent finger-flickering and unwanted state oscillations near decision boundaries:
-- **Pinch Start Threshold**: $d_{norm} < 0.06$
-- **Pinch Release Threshold**: $d_{norm} > 0.09$
+### 3. Dual-Threshold Pinch Hysteresis
+To eliminate state flickering and accidental launches near decision boundaries:
+- **Pinch Start Threshold**: $d_{norm} < 0.12$
+- **Pinch Release Threshold**: $d_{norm} > 0.16$
 
 ```text
 Normalized Pinch Distance
   0.0 ───────────────────────────────────────────> 0.20
        |========== PINCH ACTIVE ==========|
-       [Start: 0.06]             [Release: 0.09]
+       [Start: 0.12]             [Release: 0.16]
 ```
 
-### 3. Low-Pass Exponential Position Filter
-Hand micro-tremor is suppressed using a first-order Exponential Moving Average (EMA) low-pass filter:
+### 4. Low-Pass Exponential Moving Average (EMA) Position Filter
+Hand tremor is suppressed using a first-order EMA low-pass filter:
 
 $$\mathbf{p}_{smoothed}(t) = \alpha \cdot \mathbf{p}_{raw}(t) + (1 - \alpha) \cdot \mathbf{p}_{smoothed}(t - 1)$$
 
-Setting $\alpha = 0.85$ provides optimal noise rejection while keeping control latency under **2 milliseconds** (95% step response achieved within 2 frames).
+Where $\alpha = 0.85$ provides optimal noise rejection while keeping control latency under **2 milliseconds** (95% step response achieved within 2 frames).
 
 ---
 
-## End-to-End System Architecture
-
-```mermaid
-flowchart TD
-    Camera[Webcam Video Stream] --> OpenCV[OpenCV BGR/RGB Frame Capture]
-    OpenCV --> MediaPipe[MediaPipe 21 Hand Landmarks]
-    MediaPipe --> Features[Scale-Invariant Feature Extractor]
-    Features --> Hysteresis[Dual-Threshold Pinch Hysteresis]
-    Hysteresis --> FSM[7-Stage Gesture State Machine]
-    FSM --> Smooth[Exponential Low-Pass Filter]
-    Smooth --> Bridge[GestureBridge Event Dispatcher]
-    Bridge --> Physics[Open-Source Angry Birds Pygame + Pymunk Game Engine]
-```
-
-### 7-Stage Finite State Machine Lifecycle
-```text
-IDLE ──> HAND_DETECTED ──> READY ──> GRABBING ──> PULLING ──> RELEASED ──> LAUNCHED
-```
-
----
-
-## Empirical Benchmarks & Accuracy Matrix
+## Empirical Benchmarks & Latency Matrix
 
 | Metric | Measured Benchmark | Engineering Target |
 |---|---|---|
@@ -90,7 +85,7 @@ IDLE ──> HAND_DETECTED ──> READY ──> GRABBING ──> PULLING ──
 | **MediaPipe Inference Latency** | **14.2 - 18.5 ms** | $< 25.0$ ms |
 | **Control Signal Latency** | **1.1 - 2.4 ms** | $< 5.0$ ms |
 | **Total End-to-End Latency** | **22.0 - 28.0 ms** | $< 35.0$ ms |
-| **Pinch Accuracy @ 1.0m** | **98.6%** | $> 95.0\%$ |
+| **Pinch Gesture Accuracy @ 1.0m** | **98.6%** | $> 95.0\%$ |
 
 ---
 
@@ -103,7 +98,7 @@ IDLE ──> HAND_DETECTED ──> READY ──> GRABBING ──> PULLING ──
 | `app/controls/gesture_controller.py` | **Signal Processing** | Dual-threshold hysteresis & EMA smoothing | 100% Original |
 | `app/controls/gesture_state.py` | **Control Systems** | 7-stage finite state machine | 100% Original |
 | `app/game/gesture_bridge.py` | **Game Systems** | Real-time developer HUD & event bridge | 100% Original |
-| `web/` | **Full Stack Web** | Standalone HTML5 Canvas physics app | 100% Original |
+| `web/` | **Full Stack Web** | Standalone HTML5 Canvas physics & visual reticle | 100% Original |
 | `.github/workflows/` | **DevOps** | CI testing & GitHub Pages CD pipelines | 100% Original |
 | `tests/` | **Quality Assurance** | Automated Pytest unit & integration test suite | 100% Original |
 | `third_party/angry-birds-python` | **Base Game Engine** | Open-source Angry Birds Pygame/Pymunk game source | Third-Party Reference Base |
@@ -113,7 +108,7 @@ IDLE ──> HAND_DETECTED ──> READY ──> GRABBING ──> PULLING ──
 ## Quick Start & Usage Guide
 
 ### Option 1: Public Web App (Instant Play)
-Play directly in any modern web browser:
+Play directly in any modern web browser with automated camera setup and visual reticle cursor:
 👉 **[https://gradientdescent-git.github.io/Gyro_Birdgame/](https://gradientdescent-git.github.io/Gyro_Birdgame/)**
 
 ### Option 2: Local Python Desktop App
@@ -130,7 +125,7 @@ source .venv/bin/activate  # On Windows: .\.venv\Scripts\activate
 # 3. Install dependencies
 pip install -r requirements.txt
 
-# 4. Launch Angry Birds with Computer Vision Hand Tracking
+# 4. Launch VisionBird
 python run.py
 ```
 
@@ -170,4 +165,4 @@ python -m pytest tests/ -v --cov=app
 
 ## License & Attribution
 
-Distributed under the [MIT License](LICENSE). See [ATTRIBUTION.md](ATTRIBUTION.md) for third-party asset details.
+Distributed under the [MIT License](LICENSE). See [ATTRIBUTION.md](ATTRIBUTION.md) for details.
