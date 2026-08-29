@@ -1578,10 +1578,9 @@ while running:
                     and current_pinching
                     and game_state == 0
                 ):
-
                     mouse_pressed = True
-
-                    update_gesture_pull()
+                    x_mouse = gesture_x
+                    y_mouse = gesture_y
 
                 # =================================================
                 # PINCH RELEASE = LAUNCH

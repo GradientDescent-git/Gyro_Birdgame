@@ -158,28 +158,8 @@ class GestureBridge:
             self._previous_aim = None
             return
 
-        current_x = control_state.aim_x
-        current_y = control_state.aim_y
-
-        if self._previous_aim is None:
-            self._previous_aim = (current_x, current_y)
-            return
-
-        previous_x, previous_y = self._previous_aim
-        delta_x = current_x - previous_x
-        delta_y = current_y - previous_y
-        self._previous_aim = (current_x, current_y)
-
-        if abs(delta_x) < self.dead_zone:
-            delta_x = 0.0
-        if abs(delta_y) < self.dead_zone:
-            delta_y = 0.0
-
-        movement_x = delta_x * self.screen_width * self.sensitivity
-        movement_y = delta_y * self.screen_height * self.sensitivity
-
-        self.game_x += int(round(movement_x))
-        self.game_y += int(round(movement_y))
+        self.game_x = int(round(control_state.aim_x * self.screen_width))
+        self.game_y = int(round(control_state.aim_y * self.screen_height))
 
         self.game_x = max(0, min(self.screen_width - 1, self.game_x))
         self.game_y = max(0, min(self.screen_height - 1, self.game_y))
