@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>VisionBird — Real-Time Computer Vision Gesture Physics Game</title>
+  <link rel="stylesheet" href="web/css/style.css">
+  <!-- MediaPipe Hands & Camera Utils CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js" crossorigin="anonymous"></script>
+</head>
+<body>
+  <div id="app-header">
+    <h1>VisionBird</h1>
+    <p class="subtitle">Real-Time Computer Vision Gesture-Controlled Physics Engine</p>
+  </div>
+
+  <div id="main-container">
+    <div id="canvas-wrapper">
+      <canvas id="gameCanvas" width="1200" height="650"></canvas>
+      <div id="controls-overlay">
+        <button id="btn-camera" class="btn">Enable Webcam</button>
+        <button id="btn-restart" class="btn">Restart Level</button>
+        <span id="hud-status">Controls: Mouse Active | Webcam Ready</span>
+      </div>
+    </div>
+
+    <!-- Hidden video element for MediaPipe stream -->
+    <video id="webcam" style="display: none;" playsinline></video>
+    <!-- Hidden camera preview canvas -->
+    <canvas id="cvPreview" width="320" height="240"></canvas>
+  </div>
+
+  <div id="instructions">
+    <h3>Gesture Controls Guide</h3>
+    <ul>
+      <li><strong>Aim:</strong> Move your index finger in front of the camera.</li>
+      <li><strong>Grab:</strong> Pinch your thumb and index finger together near the slingshot.</li>
+      <li><strong>Pull & Slingshot:</strong> Move your pinched hand backward relative to the grab anchor.</li>
+      <li><strong>Launch:</strong> Release the pinch gesture.</li>
+      <li><strong>Fallback:</strong> Click and drag with mouse if webcam is unavailable.</li>
+    </ul>
+  </div>
+
+  <script src="web/js/vision.js"></script>
+  <script src="web/js/gesture.js"></script>
+  <script src="web/js/game.js"></script>
+</body>
+</html>
