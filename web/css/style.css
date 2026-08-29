@@ -1,0 +1,121 @@
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  background-color: #1a1a24;
+  color: #f0f0f0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-height: 100vh;
+  padding: 20px;
+}
+
+#app-header {
+  text-align: center;
+  margin-bottom: 15px;
+}
+
+#app-header h1 {
+  font-size: 2.2rem;
+  color: #ff4757;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+}
+
+.subtitle {
+  font-size: 0.95rem;
+  color: #a4b0be;
+  margin-top: 5px;
+}
+
+#main-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  position: relative;
+}
+
+#canvas-wrapper {
+  position: relative;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+  border: 3px solid #2f3542;
+  background-color: #20bf6b;
+}
+
+#gameCanvas {
+  display: block;
+  max-width: 100%;
+  height: auto;
+}
+
+#cvPreview {
+  position: absolute;
+  top: 15px;
+  right: 15px;
+  width: 180px;
+  height: 135px;
+  border-radius: 8px;
+  border: 2px solid #ffffff;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+  background-color: #000;
+  z-index: 10;
+}
+
+#controls-overlay {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  margin-top: 15px;
+  width: 100%;
+  justify-content: center;
+}
+
+.btn {
+  background: #ff4757;
+  color: #fff;
+  border: none;
+  padding: 10px 20px;
+  font-size: 0.95rem;
+  font-weight: bold;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn:hover {
+  background: #ff6b81;
+  transform: translateY(-2px);
+}
+
+#hud-status {
+  font-size: 0.9rem;
+  color: #2ed573;
+  font-weight: 600;
+}
+
+#instructions {
+  margin-top: 25px;
+  background: #2f3542;
+  padding: 20px 30px;
+  border-radius: 10px;
+  max-width: 800px;
+  width: 100%;
+}
+
+#instructions h3 {
+  color: #ffa502;
+  margin-bottom: 10px;
+}
+
+#instructions ul {
+  list-style-type: square;
+  padding-left: 20px;
+  line-height: 1.6;
+}
