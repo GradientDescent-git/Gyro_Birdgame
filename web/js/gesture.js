@@ -1,14 +1,13 @@
 /**
  * VisionBird Browser Gesture Controller & Feature Extractor
- * 1:1 Client-Side Port of Python app/controls/gesture_controller.py & gesture_state.py
  */
 
 const GESTURE_CONFIG = {
-  PINCH_START_THRESHOLD: 0.07,   // Matching app/config/settings.py
-  PINCH_RELEASE_THRESHOLD: 0.11, // Dual-threshold hysteresis
+  PINCH_START_THRESHOLD: 0.12,   // Forgiving pinch start threshold
+  PINCH_RELEASE_THRESHOLD: 0.16, // Dual-threshold hysteresis
   SMOOTHING_ALPHA: 0.85,         // Low-pass exponential smoothing
-  DEAD_ZONE: 0.001,
-  SENSITIVITY_MULTIPLIER: 2.2    // High sensitivity multiplier for fast response
+  DEAD_ZONE: 0.0005,
+  SENSITIVITY_MULTIPLIER: 2.5    // High sensitivity multiplier
 };
 
 const GestureStateEnum = {

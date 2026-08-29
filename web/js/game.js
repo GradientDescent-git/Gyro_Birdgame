@@ -1,7 +1,7 @@
 /**
  * VisionBird Authentic HTML5 Angry Birds Physics Engine & Gesture Controller
- * Features: Immediate Pinch Grab, Trajectory Projection, Wood/Stone Structural Columns, 
- * Web Audio Sound Synth, Multi-Level Progression (Levels 1-3), Stars, and MediaPipe Hand Control.
+ * Features: High-Visibility Aiming Reticle Cursor, Auto-Camera Start, Immediate Pinch Grab,
+ * Trajectory Projection, Wood/Stone Structural Columns, Web Audio Sound Synth, Multi-Level Progression.
  */
 class VisionBirdGame {
   constructor() {
@@ -44,11 +44,27 @@ class VisionBirdGame {
 
     this.gestureController = new BrowserGestureController();
     this.visionTracker = null;
+    this.handCursor = { x: 200, y: 460, detected: false, pinching: false, normPinch: 0 };
 
     this.mouse = { x: 200, y: 460, isDown: false };
     
     this.loadLevel(this.level);
     this.setupEvents();
+    this.autoStartCamera();
+  }
+
+  async autoStartCamera() {
+    setTimeout(async () => {
+      if (!this.visionTracker) {
+        this.initAudio();
+        this.visionTracker = new VisionTracker((landmarks) => this.handleGestureInput(landmarks));
+        const ok = await this.visionTracker.init();
+        if (ok) {
+          document.getElementById('hud-status').innerText = "Controls: Webcam Active | MediaPipe Tracking";
+          document.getElementById('hud-status').style.color = "#2ed573";
+        }
+      }
+    }, 500);
   }
 
   initAudio() {
@@ -156,10 +172,21 @@ class VisionBirdGame {
 
   handleGestureInput(landmarks) {
     const res = this.gestureController.processLandmarks(landmarks);
-    if (!res.detected) return;
+    if (!res.detected) {
+      this.handCursor.detected = false;
+      return;
+    }
 
     const gameX = res.x * this.canvas.width;
     const gameY = res.y * this.canvas.height;
+
+    this.handCursor = {
+      x: gameX,
+      y: gameY,
+      detected: true,
+      pinching: res.isGrabbing,
+      normPinch: res.normPinch || 0
+    };
 
     if (!this.bird.launched) {
       // Immediate pinch grab: Any pinch when bird is ready instantly grabs the bird
@@ -173,7 +200,7 @@ class VisionBirdGame {
           const dx = gameX - this.slingshot.x;
           const dy = gameY - this.slingshot.y;
           const pullDist = Math.hypot(dx, dy);
-          const maxPull = 130;
+          const maxPull = 140;
           if (pullDist > maxPull) {
             const angle = Math.atan2(dy, dx);
             this.bird.x = this.slingshot.x + Math.cos(angle) * maxPull;
@@ -219,7 +246,7 @@ class VisionBirdGame {
       const dx = this.mouse.x - this.slingshot.x;
       const dy = this.mouse.y - this.slingshot.y;
       const pullDist = Math.hypot(dx, dy);
-      const maxPull = 130;
+      const maxPull = 140;
       if (pullDist > maxPull) {
         const angle = Math.atan2(dy, dx);
         this.bird.x = this.slingshot.x + Math.cos(angle) * maxPull;
@@ -298,6 +325,35 @@ class VisionBirdGame {
       this.ctx.arc(simX, simY, 4, 0, 2 * Math.PI);
       this.ctx.fill();
     }
+  }
+
+  renderHandCursor() {
+    if (!this.handCursor.detected) return;
+
+    this.ctx.save();
+    const cx = this.handCursor.x;
+    const cy = this.handCursor.y;
+    const isPinch = this.handCursor.pinching;
+
+    // Draw Aiming Reticle Outer Ring
+    this.ctx.strokeStyle = isPinch ? '#2ed573' : '#ffa502';
+    this.ctx.lineWidth = 3;
+    this.ctx.beginPath();
+    this.ctx.arc(cx, cy, 18, 0, 2 * Math.PI);
+    this.ctx.stroke();
+
+    // Inner Glow Dot
+    this.ctx.fillStyle = isPinch ? '#2ed573' : '#ff4757';
+    this.ctx.beginPath();
+    this.ctx.arc(cx, cy, 6, 0, 2 * Math.PI);
+    this.ctx.fill();
+
+    // Text Label
+    this.ctx.fillStyle = '#ffffff';
+    this.ctx.font = 'bold 12px Segoe UI';
+    this.ctx.fillText(isPinch ? 'PINCH GRABBED' : 'HAND CURSOR', cx + 22, cy + 5);
+
+    this.ctx.restore();
   }
 
   render() {
@@ -380,6 +436,9 @@ class VisionBirdGame {
       this.ctx.arc(p.x, p.y, 4, 0, 2 * Math.PI);
       this.ctx.fill();
     });
+
+    // Render Visual Hand Aiming Cursor
+    this.renderHandCursor();
 
     // HUD Display
     this.ctx.fillStyle = '#ffffff';
