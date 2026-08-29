@@ -3,11 +3,11 @@
  */
 
 const GESTURE_CONFIG = {
-  PINCH_START_THRESHOLD: 0.12,   // Forgiving pinch start threshold
-  PINCH_RELEASE_THRESHOLD: 0.16, // Dual-threshold hysteresis
+  PINCH_START_THRESHOLD: 0.10,   // Balanced pinch start threshold
+  PINCH_RELEASE_THRESHOLD: 0.14, // Dual-threshold hysteresis
   SMOOTHING_ALPHA: 0.85,         // Low-pass exponential smoothing
-  DEAD_ZONE: 0.0005,
-  SENSITIVITY_MULTIPLIER: 2.5    // High sensitivity multiplier
+  DEAD_ZONE: 0.001,
+  SENSITIVITY_MULTIPLIER: 1.4    // Balanced sensitivity multiplier
 };
 
 const GestureStateEnum = {
