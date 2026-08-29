@@ -1547,45 +1547,27 @@ while running:
                 # =================================================
 
                 if (
-                    pinch_started
+                    (pinch_started or current_pinching)
                     and not gesture_grabbed
                     and level.number_of_birds > 0
                     and game_state == 0
                 ):
+                    gesture_grabbed = True
+                    mouse_pressed = True
 
-                    grab_distance = distance(
-                        sling_x,
-                        sling_y,
-                        gesture_x,
-                        gesture_y,
-                    )
+                    gesture_grab_start_x = gesture_x
+                    gesture_grab_start_y = gesture_y
 
-                    if grab_distance < 220:
+                    gesture_pull_start_x = sling_x
+                    gesture_pull_start_y = sling_y
 
-                        gesture_grabbed = True
+                    gesture_smooth_x = float(sling_x)
+                    gesture_smooth_y = float(sling_y)
 
-                        mouse_pressed = True
+                    x_mouse = sling_x
+                    y_mouse = sling_y
 
-                        gesture_grab_start_x = gesture_x
-                        gesture_grab_start_y = gesture_y
-
-                        gesture_pull_start_x = sling_x
-                        gesture_pull_start_y = sling_y
-
-                        gesture_smooth_x = float(
-                            sling_x
-                        )
-
-                        gesture_smooth_y = float(
-                            sling_y
-                        )
-
-                        x_mouse = sling_x
-                        y_mouse = sling_y
-
-                        print(
-                            "GESTURE: BIRD GRABBED"
-                        )
+                    print("GESTURE: BIRD GRABBED")
 
                 # =================================================
                 # PINCH HOLD = PULL

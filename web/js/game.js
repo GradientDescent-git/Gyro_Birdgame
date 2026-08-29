@@ -1,6 +1,6 @@
 /**
  * VisionBird Authentic HTML5 Angry Birds Physics Engine & Gesture Controller
- * Features: Authentic Sprites, Trajectory Projection, Wood/Stone Structural Columns & Beams, 
+ * Features: Immediate Pinch Grab, Trajectory Projection, Wood/Stone Structural Columns, 
  * Web Audio Sound Synth, Multi-Level Progression (Levels 1-3), Stars, and MediaPipe Hand Control.
  */
 class VisionBirdGame {
@@ -162,12 +162,10 @@ class VisionBirdGame {
     const gameY = res.y * this.canvas.height;
 
     if (!this.bird.launched) {
-      if (res.grabStarted || (res.isGrabbing && !this.bird.grabbing)) {
-        const dist = Math.hypot(gameX - this.slingshot.x, gameY - this.slingshot.y);
-        if (dist < 130) {
-          this.bird.grabbing = true;
-          this.playSound(440, 'triangle', 0.1);
-        }
+      // Immediate pinch grab: Any pinch when bird is ready instantly grabs the bird
+      if ((res.grabStarted || res.isGrabbing) && !this.bird.grabbing) {
+        this.bird.grabbing = true;
+        this.playSound(440, 'triangle', 0.1);
       }
 
       if (this.bird.grabbing) {
@@ -184,7 +182,7 @@ class VisionBirdGame {
             this.bird.x = gameX;
             this.bird.y = gameY;
           }
-        } else if (res.releaseTriggered) {
+        } else if (res.releaseTriggered || !res.isGrabbing) {
           this.launchBirdFrom(this.bird.x, this.bird.y);
           this.bird.grabbing = false;
         }
