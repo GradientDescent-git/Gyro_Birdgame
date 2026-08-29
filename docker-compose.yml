@@ -1,0 +1,19 @@
+version: '3.8'
+
+services:
+  visionbird-web:
+    build: .
+    ports:
+      - "8000:8000"
+    command: python -m http.server 8000 -d web
+    restart: unless-stopped
+
+  visionbird-desktop:
+    build: .
+    environment:
+      - DISPLAY=${DISPLAY}
+    volumes:
+      - /tmp/.X11-unix:/tmp/.X11-unix
+    devices:
+      - "/dev/video0:/dev/video0"
+    command: python run.py
