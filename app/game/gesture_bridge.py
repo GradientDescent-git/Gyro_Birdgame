@@ -128,7 +128,7 @@ class GestureBridge:
         # Performance FPS Calculation
         now = time.perf_counter()
         dt = now - self._last_frame_time
-        if dt > 0:
+        if dt > 1e-4:
             self._fps = 0.9 * self._fps + 0.1 * (1.0 / dt)
         self._last_frame_time = now
 
