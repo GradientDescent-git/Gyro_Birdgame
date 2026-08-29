@@ -4,10 +4,11 @@
  */
 
 const GESTURE_CONFIG = {
-  PINCH_START_THRESHOLD: 0.06,   // Matching app/config/settings.py
-  PINCH_RELEASE_THRESHOLD: 0.09, // Dual-threshold hysteresis
+  PINCH_START_THRESHOLD: 0.07,   // Matching app/config/settings.py
+  PINCH_RELEASE_THRESHOLD: 0.11, // Dual-threshold hysteresis
   SMOOTHING_ALPHA: 0.85,         // Low-pass exponential smoothing
-  DEAD_ZONE: 0.0015
+  DEAD_ZONE: 0.001,
+  SENSITIVITY_MULTIPLIER: 2.2    // High sensitivity multiplier for fast response
 };
 
 const GestureStateEnum = {
@@ -25,6 +26,7 @@ class BrowserGestureController {
     this.smoothing = GESTURE_CONFIG.SMOOTHING_ALPHA;
     this.pinchStartThresh = GESTURE_CONFIG.PINCH_START_THRESHOLD;
     this.pinchReleaseThresh = GESTURE_CONFIG.PINCH_RELEASE_THRESHOLD;
+    this.sensitivity = GESTURE_CONFIG.SENSITIVITY_MULTIPLIER;
 
     this.currentState = GestureStateEnum.IDLE;
     this.isGrabbing = false;
@@ -80,13 +82,20 @@ class BrowserGestureController {
       this.smoothedPos.y = this.smoothing * rawY + (1.0 - this.smoothing) * this.smoothedPos.y;
     }
 
+    // Apply Sensitivity scaling relative to center
+    const centeredX = 0.5 + (this.smoothedPos.x - 0.5) * this.sensitivity;
+    const centeredY = 0.5 + (this.smoothedPos.y - 0.5) * this.sensitivity;
+
+    const clampedX = Math.max(0.0, Math.min(1.0, centeredX));
+    const clampedY = Math.max(0.0, Math.min(1.0, centeredY));
+
     // Update Finite State Machine
     this.updateFSM(true, this.isGrabbing);
 
     return {
       detected: true,
-      x: this.smoothedPos.x,
-      y: this.smoothedPos.y,
+      x: clampedX,
+      y: clampedY,
       normPinch: normPinch,
       isGrabbing: this.isGrabbing,
       grabStarted: grabStarted,
