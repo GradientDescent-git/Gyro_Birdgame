@@ -1,8 +1,6 @@
 from __future__ import annotations
 
-import random
 from dataclasses import dataclass, field
-from typing import List, Tuple
 
 
 @dataclass
@@ -28,8 +26,8 @@ class PhysicsBlock:
 class GameLevelData:
     level_id: int
     name: str
-    pigs: List[TargetPig] = field(default_factory=list)
-    blocks: List[PhysicsBlock] = field(default_factory=list)
+    pigs: list[TargetPig] = field(default_factory=list)
+    blocks: list[PhysicsBlock] = field(default_factory=list)
     par_score: int = 15000
 
 

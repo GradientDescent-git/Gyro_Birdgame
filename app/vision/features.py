@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import math
 from dataclasses import dataclass
-from typing import Any, Optional
+from typing import Any
 
 
 @dataclass
@@ -22,10 +22,10 @@ class FeatureVector:
     handedness: str = "Unknown"
     confidence: float = 0.0
 
-    index_tip: Optional[Point2D] = None
-    thumb_tip: Optional[Point2D] = None
-    wrist: Optional[Point2D] = None
-    hand_center: Optional[Point2D] = None
+    index_tip: Point2D | None = None
+    thumb_tip: Point2D | None = None
+    wrist: Point2D | None = None
+    hand_center: Point2D | None = None
 
     raw_pinch_distance: float = 0.0
     hand_scale: float = 1.0

@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import sys
 from pathlib import Path
-from typing import Optional
 
 
 class GameController:
@@ -12,7 +11,7 @@ class GameController:
     mouse fallback, and clean resource teardown.
     """
 
-    def __init__(self, project_root: Optional[Path] = None) -> None:
+    def __init__(self, project_root: Path | None = None) -> None:
         if project_root is None:
             self.project_root = Path(__file__).resolve().parent.parent.parent
         else:

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import time
 from dataclasses import dataclass
-from typing import Any, Dict, Optional
+from typing import Any
 
 import cv2
 
@@ -30,7 +30,7 @@ class GestureState:
     pinch_started: bool
     pinch_released: bool
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return {
             "detected": self.detected,
             "x": self.x,
@@ -79,14 +79,14 @@ class GestureBridge:
         self.dead_zone = dead_zone
         self.debug_mode = debug_mode
 
-        self.camera: Optional[cv2.VideoCapture] = None
+        self.camera: cv2.VideoCapture | None = None
         self.fallback_mode = False
 
         try:
             self.camera = cv2.VideoCapture(camera_index)
             if not self.camera.isOpened():
                 self.fallback_mode = True
-        except Exception:
+        except Exception:  # noqa: BLE001
             self.fallback_mode = True
 
         self.tracker = HandTracker()
@@ -95,7 +95,7 @@ class GestureBridge:
         self.game_x = screen_width // 2
         self.game_y = screen_height // 2
 
-        self._previous_aim: Optional[tuple[float, float]] = None
+        self._previous_aim: tuple[float, float] | None = None
         self._closed = False
 
         # Metrics for Performance Overlay
@@ -103,12 +103,10 @@ class GestureBridge:
         self._fps = 0.0
         self._inference_ms = 0.0
 
-    def update(self) -> Dict[str, Any]:
+    def update(self) -> dict[str, Any]:
         """Read webcam frame and return latest gesture state for the game engine."""
         if self._closed or self.fallback_mode or self.camera is None:
             return self._empty_state()
-
-        start_time = time.perf_counter()
 
         success, frame = self.camera.read()
         if not success or frame is None:
@@ -158,8 +156,8 @@ class GestureBridge:
             self._previous_aim = None
             return
 
-        self.game_x = int(round(control_state.aim_x * self.screen_width))
-        self.game_y = int(round(control_state.aim_y * self.screen_height))
+        self.game_x = round(control_state.aim_x * self.screen_width)
+        self.game_y = round(control_state.aim_y * self.screen_height)
 
         self.game_x = max(0, min(self.screen_width - 1, self.game_x))
         self.game_y = max(0, min(self.screen_height - 1, self.game_y))
@@ -168,7 +166,7 @@ class GestureBridge:
         self.controller.reset()
         self._previous_aim = None
 
-    def _empty_state(self) -> Dict[str, Any]:
+    def _empty_state(self) -> dict[str, Any]:
         return GestureState(
             detected=False,
             x=self.game_x,

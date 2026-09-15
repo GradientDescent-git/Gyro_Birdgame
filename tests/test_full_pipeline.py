@@ -1,10 +1,9 @@
 from __future__ import annotations
 
-import numpy as np
 from app.controls.gesture_controller import GestureController
 from app.controls.gesture_state import GestureStateEnum
-from app.vision.features import FeatureExtractor, Point2D
-from app.vision.hand_tracker import HandState, HandTracker
+from app.vision.features import FeatureExtractor
+from app.vision.hand_tracker import HandState
 
 
 def test_full_synthetic_pipeline_integration():

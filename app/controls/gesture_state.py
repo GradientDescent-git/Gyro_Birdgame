@@ -52,8 +52,7 @@ class GestureStateMachine:
                 self.state = GestureStateEnum.RELEASED
         elif current == GestureStateEnum.RELEASED:
             self.state = GestureStateEnum.LAUNCHED
-        elif current == GestureStateEnum.LAUNCHED:
-            if not is_pinching:
-                self.state = GestureStateEnum.READY
+        elif current == GestureStateEnum.LAUNCHED and not is_pinching:
+            self.state = GestureStateEnum.READY
 
         return self.state

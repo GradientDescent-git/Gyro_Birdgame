@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Optional, Tuple
 
 from app.controls.gesture_state import GestureStateEnum, GestureStateMachine
 from app.vision.hand_tracker import HandState
@@ -20,7 +19,7 @@ class ControlState:
     aim_x: float = 0.5
     aim_y: float = 0.5
 
-    pinch_distance: Optional[float] = None
+    pinch_distance: float | None = None
     state: GestureStateEnum = GestureStateEnum.IDLE
 
 
@@ -56,7 +55,7 @@ class GestureController:
         self.fsm = GestureStateMachine()
 
         self._was_grabbing = False
-        self._smoothed_position: Optional[Tuple[float, float]] = None
+        self._smoothed_position: tuple[float, float] | None = None
         self._pinch_counter = 0
         self._unpinch_counter = 0
         self._hysteresis_grabbing = False

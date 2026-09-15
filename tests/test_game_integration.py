@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import unittest
 from app.game.gesture_bridge import GestureBridge
 
 

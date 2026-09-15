@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Optional, Tuple
 
 
 @dataclass
@@ -74,7 +73,7 @@ class HandCalibrator:
             pinch_baseline=avg_pinch,
         )
 
-    def map_to_roi(self, x: float, y: float) -> Tuple[float, float]:
+    def map_to_roi(self, x: float, y: float) -> tuple[float, float]:
         """Maps normalized camera point (0-1) to ROI bounded normalized space (0-1)."""
         d = self.data
         dx = d.roi_max_x - d.roi_min_x

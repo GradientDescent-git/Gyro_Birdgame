@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Optional, Tuple
 
 import cv2
 import numpy as np
@@ -13,26 +12,26 @@ try:
         mp_draw = mp.solutions.drawing_utils
         mp_draw_styles = mp.solutions.drawing_styles
     else:
-        import mediapipe.python.solutions.hands as mp_hands
-        import mediapipe.python.solutions.drawing_utils as mp_draw
         import mediapipe.python.solutions.drawing_styles as mp_draw_styles
-except Exception:
+        import mediapipe.python.solutions.drawing_utils as mp_draw
+        import mediapipe.python.solutions.hands as mp_hands
+except Exception:  # noqa: BLE001
     mp_hands = None
     mp_draw = None
     mp_draw_styles = None
 
-from app.vision.features import FeatureExtractor, FeatureVector, Point2D
+from app.vision.features import FeatureExtractor, FeatureVector
 
 
 @dataclass
 class HandState:
     detected: bool = False
     handedness: str = "Unknown"
-    index_tip: Optional[Tuple[float, float]] = None
-    thumb_tip: Optional[Tuple[float, float]] = None
-    hand_center: Optional[Tuple[float, float]] = None
-    pinch_distance: Optional[float] = None
-    normalized_pinch_distance: Optional[float] = None
+    index_tip: tuple[float, float] | None = None
+    thumb_tip: tuple[float, float] | None = None
+    hand_center: tuple[float, float] | None = None
+    pinch_distance: float | None = None
+    normalized_pinch_distance: float | None = None
     is_pinching: bool = False
     confidence: float = 0.0
     hand_scale: float = 1.0
@@ -69,14 +68,14 @@ class HandTracker:
         else:
             self.hands = None
 
-    def process(self, frame: np.ndarray) -> Tuple[np.ndarray, HandState]:
+    def process(self, frame: np.ndarray) -> tuple[np.ndarray, HandState]:
         if frame is None or frame.size == 0 or self.hands is None:
             return frame, HandState(detected=False)
 
         try:
             frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
             results = self.hands.process(frame_rgb)
-        except Exception:
+        except Exception:  # noqa: BLE001
             return frame, HandState(detected=False)
 
         if not results.multi_hand_landmarks:
